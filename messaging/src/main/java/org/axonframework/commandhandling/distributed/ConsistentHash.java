@@ -71,7 +71,7 @@ public class ConsistentHash {
     }
 
     private ConsistentHash(Map<String, ConsistentHashMember> members,
-                           Function<String, String> hashFunction, int modCount) {
+        Function<String, String> hashFunction, int modCount) {
         this.hashFunction = hashFunction;
         this.modCount = modCount;
         this.hashToMember = new TreeMap<>();
@@ -106,19 +106,24 @@ public class ConsistentHash {
      */
     public Optional<Member> getMember(String routingKey, CommandMessage<?> commandMessage) {
         String hash = hash(routingKey);
+        System.out.println("JAN=ConsistentHash:109:GET-MEMBER routingKey=" + routingKey + " hash(routingKey)=" + hash + " commandMessage=" + commandMessage);
+        hashToMember.keySet().forEach(key -> System.out.println("JAN=ConsistentHash:109:GET-MEMBER hashToMember.key=" + key + " hashToMember.value=" + hashToMember.get(key)));
+        System.out.println("JAN=ConsistentHash:109:GET-MEMBER tailMap");
         Optional<Member> foundMember = findSuitableMember(commandMessage, hashToMember.tailMap(hash).values());
         if (!foundMember.isPresent()) {
+            System.out.println("JAN=ConsistentHash:109:GET-MEMBER headMap");
             foundMember = findSuitableMember(commandMessage, hashToMember.headMap(hash).values());
         }
         return foundMember;
     }
 
     private Optional<Member> findSuitableMember(CommandMessage<?> commandMessage,
-                                                Collection<ConsistentHashMember> members) {
+        Collection<ConsistentHashMember> members) {
         return members.stream()
-                .filter(member -> member.commandFilter.matches(commandMessage))
-                .map(Member.class::cast)
-                .findAny();
+            .peek(member -> System.out.println("JAN=ConsistentHash:109:FIND-SUITABLE-MEMBER member.name=" + member.name()))
+            .filter(member -> member.commandFilter.matches(commandMessage))
+            .map(Member.class::cast)
+            .findAny();
     }
 
     /**
@@ -193,8 +198,8 @@ public class ConsistentHash {
     @Override
     public String toString() {
         String join = this.members.values().stream()
-                .map(ConsistentHashMember::toString)
-                .collect(Collectors.joining(","));
+            .map(ConsistentHashMember::toString)
+            .collect(Collectors.joining(","));
         return "ConsistentHash ["+join+"]";
     }
 
@@ -217,7 +222,7 @@ public class ConsistentHash {
         private final CommandMessageFilter commandFilter;
 
         private ConsistentHashMember(Member member, int segmentCount,
-                                     CommandMessageFilter commandFilter) {
+            CommandMessageFilter commandFilter) {
             if (member instanceof ConsistentHashMember) {
                 this.member = ((ConsistentHashMember) member).member;
             } else {
@@ -269,8 +274,8 @@ public class ConsistentHash {
          */
         public Set<String> hashes() {
             return IntStream.range(0, segmentCount)
-                            .mapToObj(i -> hash(name() + " #" + i))
-                            .collect(Collectors.toSet());
+                .mapToObj(i -> hash(name() + " #" + i))
+                .collect(Collectors.toSet());
         }
 
         @Override
@@ -288,8 +293,8 @@ public class ConsistentHash {
             }
             ConsistentHashMember that = (ConsistentHashMember) o;
             return segmentCount == that.segmentCount &&
-                    Objects.equals(member, that.member) &&
-                    Objects.equals(commandFilter, that.commandFilter);
+                Objects.equals(member, that.member) &&
+                Objects.equals(commandFilter, that.commandFilter);
         }
 
         @Override
